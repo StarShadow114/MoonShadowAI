@@ -20,8 +20,8 @@ Thumbs.db
 corpus/*.txt
 
 # 模型文件（可能很大，不上传）
-models/*.json
-models/*.bin
+#models/*.json
+#models/*.bin
 
 # 日志
 *.log
