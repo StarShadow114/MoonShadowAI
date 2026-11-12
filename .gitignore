@@ -1,0 +1,27 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.so
+
+# 虚拟环境
+venv/
+env/
+.venv/
+
+# 编辑器
+.vscode/
+.idea/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 训练数据（大文件，不上传）
+corpus/*.txt
+
+# 模型文件（可能很大，不上传）
+models/*.json
+models/*.bin
+
+# 日志
+*.log
