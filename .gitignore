@@ -25,3 +25,4 @@ models/*.bin
 
 # 日志
 *.log
+training/materials/
