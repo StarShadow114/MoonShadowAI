@@ -9,7 +9,6 @@ models_dir = os.path.join(script_dir, "..", "models")
 
 def load_models():
     """加载两个 JSON，返回 (vocab, bigram)"""
-    # TODO: 用 json.load 读两个文件
     with open(os.path.join(models_dir, "vocab.json"), "r", encoding="utf-8") as rvoc:
         vocab = json.load(rvoc)
     with open(os.path.join(models_dir, "bigram.json"), "r", encoding="utf-8") as rbr:
@@ -19,7 +18,6 @@ def load_models():
 
 def pick_next(next_words):
     """给一个 {"喜欢": 3, "爱": 1}，按权重返回一个词"""
-    # TODO: 方案A 手写累加 / 方案B random.choices
     words = list(next_words.keys())
     weights = list(next_words.values())
     return random.choices(words, weights=weights, k=1)[0]
@@ -28,13 +26,28 @@ def pick_next(next_words):
 def generate(start_word, max_length=20):
     """从 start_word 开始生成一句话"""
     vocab, bigram = load_models()
-
-    # TODO: 校验 start_word 在不在 vocab 里、在不在 bigram 里
-    # TODO: 上面那个循环
-    # TODO: 用 "".join() 拼成字符串返回
-    pass
+    if start_word not in vocab:
+        return f"'{start_word}' 不在词表中"
+    if start_word not in bigram:
+        return f"'{start_word}' 后面没有接任何词"
+    result = [start_word]
+    current = start_word
+    for _ in range(max_length - 1):
+        if current not in bigram:
+            break
+        next_words = bigram[current]
+        if not next_words:
+            break
+        next_word = pick_next(next_words)
+        result.append(next_word)
+        current = next_word
+    return "".join(result) + "。"
 
 
 if __name__ == "__main__":
-    for word in ["学习", "数据", "项目"]:
-        print(word, "→", generate(word))
+    while True:
+        word = input("MoonShadowAI. Please input a start word(pass 'exit' to exit.): ")
+        if word == "exit":
+            break
+        else:
+            print(word, "→", generate(word))

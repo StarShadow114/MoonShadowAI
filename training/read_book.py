@@ -1,70 +1,88 @@
 import os
 import jieba
-import string
+import json
+from collections import Counter, defaultdict
+import re
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-folder_path = os.path.join(script_dir, "materials")
-extensions = [".md", ".markdown", ".txt"]
-
-files = []
-for filename in os.listdir(folder_path):
-    if any(filename.endswith(ext) for ext in extensions):
-        files.append(filename)
-print(files)
+punctuation_pattern = re.compile(r'^[，。！？、；：""''（）【】《》\s]+$')
 
 
-def read_books(folder_path, files):
-    all_readed_tokens = []
-    for i in files:
-        path = folder_path + "/" + i
-        with open(path, "r", encoding="utf-8") as rf:
-            content = rf.read()
-        readed_tokens = jieba.lcut(content)
-        all_readed_tokens.extend(readed_tokens)
-        print(f"共计{len(readed_tokens)}个词")
-    return all_readed_tokens
+def read_material(file_path):
+    """读取单个文件内容"""
+    with open(file_path, "r", encoding="utf-8") as f:
+        return f.read()
 
 
-def build_vocab_and_bigram(all_readed_tokens):
-    # 词频统计
-    tokens_count = {}
-    for readed_tokens in all_readed_tokens:
-        if readed_tokens in tokens_count:
-            tokens_count[readed_tokens] += 1
-        else:
-            tokens_count[readed_tokens] = 1
+def clean_text(text):
+    """去除多余空白，保留中文、英文、数字和常见标点"""
+    import re
+    text = re.sub(r'\s+', '', text)
+    return text
 
-    # 数据清洗
-    punctuation = string.punctuation + "。，、；：？！「」『』（）【】《》—…·～"
-    clean_count = {}
-    for word, count in tokens_count.items():
-        if len(word) < 2:
+
+def build_vocab_and_bigram(materials_dir):
+    """读取 materials 下所有文件，分词、统计词频和 bigram"""
+    vocab_counter = Counter()
+    bigram_counter = defaultdict(lambda: defaultdict(int))
+
+    for filename in os.listdir(materials_dir):
+        filepath = os.path.join(materials_dir, filename)
+        if not os.path.isfile(filepath):
             continue
-        if all(char in punctuation for char in word):
+        text = read_material(filepath)
+        text = clean_text(text)
+        tokens = list(jieba.cut(text))
+
+        # 把标点粘到前一个词上
+        merged_tokens = []
+        for token in tokens:
+            if punctuation_pattern.match(token) and merged_tokens:
+                merged_tokens[-1] += token
+            else:
+                merged_tokens.append(token)
+
+        # 统计词频
+        for token in merged_tokens:
+            vocab_counter[token] += 1
+
+        # 统计 bigram
+        for i in range(len(merged_tokens) - 1):
+            bigram_counter[merged_tokens[i]][merged_tokens[i + 1]] += 1
+
+    print(f"清洗前：{len(vocab_counter)} 个词")
+
+    # 清洗：去长度小于1的词、去纯标点
+    cleaned_vocab = {}
+    for word, count in vocab_counter.items():
+        if len(word) < 1:
             continue
-        clean_count[word] = count
-
-    # bigram 统计
-    bigram = {}
-    for i in range(len(all_readed_tokens) - 1):
-        current_word = all_readed_tokens[i]
-        next_word = all_readed_tokens[i + 1]
-        if current_word not in clean_count or next_word not in clean_count:
+        if punctuation_pattern.match(word):
             continue
-        if current_word not in bigram:
-            bigram[current_word] = {}
-        if next_word not in bigram[current_word]:
-            bigram[current_word][next_word] = 0
-        bigram[current_word][next_word] += 1
+        cleaned_vocab[word] = count
 
-    print(f"清洗前：{len(tokens_count)} 个词")
-    print(f"清洗后：{len(clean_count)} 个词")
-    print(f"bigram 条目数：{len(bigram)}")
+    print(f"清洗后：{len(cleaned_vocab)} 个词")
 
-    return clean_count, bigram
+    # 清洗 bigram：只保留 key 和 value 都在 cleaned_vocab 中的条目
+    cleaned_bigram = {}
+    for first, followers in bigram_counter.items():
+        if first not in cleaned_vocab:
+            continue
+        filtered_followers = {
+            second: count
+            for second, count in followers.items()
+            if second in cleaned_vocab
+        }
+        if filtered_followers:
+            cleaned_bigram[first] = filtered_followers
+
+    print(f"bigram 条目数：{len(cleaned_bigram)}")
+
+    return cleaned_vocab, cleaned_bigram
 
 
 if __name__ == "__main__":
-    all_readed_tokens = read_books(folder_path, files)
-    clean_count, bigram = build_vocab_and_bigram(all_readed_tokens)
-    print(f"共计{len(clean_count)}个不同的词")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    materials_dir = os.path.join(script_dir, "materials")
+    vocab, bigram = build_vocab_and_bigram(materials_dir)
+    print(f"词表大小：{len(vocab)}")
+    print(f"bigram 条目数：{len(bigram)}")
