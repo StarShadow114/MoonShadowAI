@@ -1,12 +1,25 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
 
 [project]
 name = "moonshadow-ai"
-version = "0.1.0"
-description = "A tiny language model built from scratch"
-requires-python = ">=3.8"
-dependencies = [
-    "jieba>=0.42.1",
+version = "0.2.0"
+description = "MoonShadowAI — 从 Bigram 到神经网络的语言模型学习项目"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Moonshadow"},
 ]
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.1.0",
+    "numpy>=1.26.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Moonshadow/MoonShadowAI"
+Repository = "https://github.com/Moonshadow/MoonShadowAI"
+
+[tool.setuptools.packages.find]
+include = ["mobutools*", "neural*"]

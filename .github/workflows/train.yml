@@ -1,0 +1,77 @@
+name: Train & Export Mobu
+
+on:
+  workflow_dispatch:
+    inputs:
+      epochs:
+        description: '训练轮数'
+        default: '20'
+        type: string
+      embed_dim:
+        description: '嵌入维度'
+        default: '128'
+        type: string
+      hidden_dim:
+        description: '隐藏层维度'
+        default: '256'
+        type: string
+      quantize:
+        description: '导出时量化为 int8（体积减半）'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  train:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install PyTorch (CPU)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+          python -c "import torch; print(torch.__version__)"
+
+      - name: Prepare data
+        run: python neural/prepare_data.py
+
+      - name: Train
+        run: |
+          python neural/train.py \
+            --epochs ${{ inputs.epochs }} \
+            --embed_dim ${{ inputs.embed_dim }} \
+            --hidden_dim ${{ inputs.hidden_dim }}
+
+      - name: Export to Mobu
+        run: |
+          Q=""
+          if [ "${{ inputs.quantize }}" = "true" ]; then Q="--quantize"; fi
+          python -m mobutools.cli export models/neural_model.pt models/neural_model.mobu $Q
+
+      - name: Validate mobu
+        run: python -m mobutools.cli validate models/neural_model.mobu
+
+      - name: Info
+        run: python -m mobutools.cli info models/neural_model.mobu
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moonshadow-model-${{ github.run_number }}
+          path: |
+            models/*.mobu
+            models/*.pt
+          retention-days: 30
+          if-no-files-found: warn
