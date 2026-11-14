@@ -1,0 +1,28 @@
+# MoonShadowAI 训练配置 —— 改完直接生效，命令行 -E 优先级最高
+model:
+  embed_dim: 80
+  hidden_dim: 160
+  num_layers: 1
+  dropout: 0.2
+  block_size: 64
+train:
+  batch_size: 256
+  epochs: 30
+  learning_rate: 0.005
+  weight_decay: 1.0e-05
+  grad_clip: 1.0
+  early_stop_patience: 5
+  min_delta: 1.0e-04
+data:
+  seq_path: neural/data/sequences.mobu
+  vocab_path: neural/data/vocab.mobu
+  train_split: 0.9
+runtime:
+  threads: 4
+  interop_threads: 1
+autotune:
+  enabled: true
+checkpoint:
+  dir: neural/checkpoints
+  best_name: best_model.pt
+  save_every: 5

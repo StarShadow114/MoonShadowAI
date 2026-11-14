@@ -1,0 +1,6 @@
+# torch  （SJTU cpu 索引装的 2.15.0+cpu，勿让 pip 覆盖）
+numpy
+pyyaml
+textual
+rich
+tensorboard
